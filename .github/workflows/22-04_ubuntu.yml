@@ -50,7 +50,6 @@ jobs:
 
         # configuraciones adicionales
         sudo bash -c 'echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" > /etc/chrome-remote-desktop-session'
-        sudo systemctl disable lightdm.service
 
         # instalar Google Chrome normal
         wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
