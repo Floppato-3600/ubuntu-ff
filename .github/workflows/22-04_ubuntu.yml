@@ -75,8 +75,15 @@ jobs:
 
     - name: Generar script de autorización
       run: |
-        echo "${{ github.event.inputs.auth }}" > setup.sh
-        chmod +x setup.sh
+        echo "/opt/google/chrome-remote-desktop/start-host \
+        --code=\"${{ github.event.inputs.auth }}\" \
+        --redirect-url=\"https://remotedesktop.google.com/_/oauthredirect\" \
+        --name=$(hostname) \
+        --user=Ubuntu \
+        --display=:20" > setup.sh
+         chmod +x setup.sh
+
+
 
     - name: Inicializar Chrome Remote Desktop (PIN 123456)
       run: |
