@@ -37,7 +37,6 @@ jobs:
         sudo sed -i 's/\/bin\/sh/\/bin\/bash/g' /etc/passwd
         sudo apt update
 
-        # Dependencias necesarias
         sudo apt install -y \
           xserver-xorg-video-dummy \
           xbase-clients \
@@ -49,50 +48,40 @@ jobs:
           nautilus \
           nano
 
-        # Instalar Chrome Remote Desktop
         wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
         sudo dpkg --install chrome-remote-desktop_current_amd64.deb || true
         sudo apt --yes --fix-broken install
 
-        # Configurar sesión XFCE para CRD
         sudo bash -c 'echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" > /etc/chrome-remote-desktop-session'
-
-        # Evitar error si lightdm no existe
         sudo systemctl disable lightdm.service || true
 
-        # Instalar Google Chrome normal
         wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
         sudo dpkg --install google-chrome-stable_current_amd64.deb || true
         sudo apt --yes --fix-broken install
 
-        # Instalar Python Tools
         sudo apt install python3-pip -y
         pip3 install nbformat gdown pika
 
-        # Instalar VSCode
         wget -O code.deb "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64"
         sudo dpkg --install code.deb || true
         sudo apt --yes --fix-broken install
 
-        # Instalar NVM (Node Version Manager)
         wget https://raw.githubusercontent.com/creationix/nvm/master/install.sh
         bash install.sh
         source ~/.profile
 
-        # Asegurar grupo CRD (evita el error)
         sudo groupadd chrome-remote-desktop || true
         sudo adduser Ubuntu chrome-remote-desktop
 
     - name: Generar script de autorización
       run: |
-        touch setup.sh
         echo "${{ github.event.inputs.auth }}" > setup.sh
-        chmod 777 setup.sh
+        chmod +x setup.sh
 
     - name: Inicializar Chrome Remote Desktop (PIN 123456)
       run: |
         expect -c '
-        spawn ./setup.sh
+        spawn bash setup.sh
         expect "Enter a PIN of at least six digits: "
         send "123456\r"
         expect "Enter the same PIN again: "
@@ -100,8 +89,20 @@ jobs:
         expect eof
         '
 
-    - name: SSH tunnel over ngrok
-      uses: joshlarsen/ssh-tunnel-action@v1.2
-      with:
-        ngrok_token: ${{ secrets.NGROK_TOKEN }}
+    - name: Instalar ngrok v3
+      run: |
+        wget https://dashboard.ngrok.com/api/downloads/ngrok-agent/linux-amd64 -O ngrok
+        chmod +x ngrok
 
+    - name: Configurar ngrok authtoken
+      run: |
+        mkdir -p ~/.ngrok2
+        ./ngrok config add-authtoken "${{ secrets.NGROK_TOKEN }}"
+
+    - name: Iniciar túnel TCP (SSH)
+      run: |
+        echo "Iniciando ngrok TCP tunnel en el puerto 22..."
+        ./ngrok tcp 22 >/dev/null &
+        sleep 5
+        echo "===== NGROK STATUS ====="
+        curl -s http://127.0.0.1:4040/api/tunnels
