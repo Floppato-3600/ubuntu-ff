@@ -91,18 +91,19 @@ jobs:
 
     - name: Instalar ngrok v3
       run: |
-        wget https://dashboard.ngrok.com/api/downloads/ngrok-agent/linux-amd64 -O ngrok
-        chmod +x ngrok
+        wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz -O ngrok.tgz
+        tar -xvf ngrok.tgz
+        sudo mv ngrok /usr/local/bin/
+        sudo chmod +x /usr/local/bin/ngrok
 
     - name: Configurar ngrok authtoken
       run: |
-        mkdir -p ~/.ngrok2
-        ./ngrok config add-authtoken "${{ secrets.NGROK_TOKEN }}"
+        ngrok config add-authtoken "${{ secrets.NGROK_TOKEN }}"
 
     - name: Iniciar túnel TCP (SSH)
       run: |
         echo "Iniciando ngrok TCP tunnel en el puerto 22..."
-        ./ngrok tcp 22 >/dev/null &
+        nohup ngrok tcp 22 >/dev/null 2>&1 &
         sleep 5
         echo "===== NGROK STATUS ====="
         curl -s http://127.0.0.1:4040/api/tunnels
